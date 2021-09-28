@@ -5,19 +5,20 @@ import collections as c
 import networkx as nx
 import scipy.sparse as scs
 import argparse
-
+import numpy as np
+import os
 
 parser = argparse.ArgumentParser(description='Data prep')
 parser.add_argument('--battery', type=int, default=15, metavar='N', help='Battery range in miles')
 args = parser.parse_args()
 battery = args.battery
 
-tract = pd.read_csv('data\Washington_demographics.csv')
+tract = pd.read_csv('data/Washington_demographics.csv')
 tract_focus = tract[['Legislative District','White Alone 2010', 'Black or African American Alone 2010', 'Asian Alone 2010']].iloc[1:,:].sort_values(by='Legislative District').reset_index(drop=True)
 
-tract_shp = gpd.read_file('data\Washington_legistrative.shp')
+tract_shp = gpd.read_file('data/Washington_legistrative.shp')
 tract_shp_4326 = tract_shp.to_crs(crs=4326)
-heliport = pd.read_csv('data\Washington_helipad.xls', delimiter = "\t")
+heliport = pd.read_csv('data/Washington_helipad.xls', delimiter = "\t")
 heliport = heliport[heliport['Type']=='HELIPORT']
 heliport_loc = heliport[['ARPLatitudeS', 'ARPLongitudeS']]
 heliport_loc['lat'] = heliport_loc.apply(lambda x: float(x['ARPLatitudeS'][:-1])/3600 \
@@ -99,7 +100,13 @@ prs = [normalize_graph(gg.toarray()) for gg in g["adjs"]]
 
 
 if __name__ == '__main__':
-    tract_focus[['Legislative District', 'White Alone 2010', 'Black or African American Alone 2010', 'Asian Alone 2010']].to_csv('data_process\tract_focus.csv', index=False)
-    g_heliport_loc[['name','Legislative District']].to_csv('data_process\g_heliport_loc.csv', index=False)
-    np.save('below_{}.npy'.format(battery), np.array(prs[0]))
+    dirname = 'data_process'
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+    with open('data_process/tract_focus.csv', 'wb') as f:
+        tract_focus[['Legislative District', 'White Alone 2010', 'Black or African American Alone 2010', 'Asian Alone 2010']].to_csv(f, index=False)
+    with open('data_process/g_heliport_loc.csv', 'wb') as f2:
+        g_heliport_loc[['name','Legislative District']].to_csv(f2, index=False)
+    with open('below_{}.npy'.format(battery), 'wb') as f3:
+        np.save(f3, np.array(prs[0]))
     print(len(sorted_below15))
